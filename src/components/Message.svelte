@@ -9,7 +9,7 @@
     showUserBadges,
     hoveredItem,
     port,
-    selfChannelId
+    selfChannelId, filterArray, isFilterActive
   } from '../ts/storage';
   import { chatUserActionsItems, Theme } from '../ts/chat-constants';
   import { useBanHammer } from '../ts/chat-actions';
@@ -19,6 +19,35 @@
   export let messageId: Chat.MessageAction['message']['messageId'];
   export let forceDark = false;
   export let hideName = false;
+  let hiddenClass = '';
+
+  $: message.message.forEach(communication => {
+    if ($isFilterActive && $filterArray.length !== 0) {
+      $filterArray.forEach(rule => {
+        if (!rule.isNicknameFilter) {
+          if (communication.type === 'text' && rule.isRegEx && new RegExp(rule.value).test(communication.text)) {
+            hiddenClass = 'hidden'; // hidden
+            return;
+          }
+          if (communication.type === 'text' && !rule.isRegEx && communication.text.includes(rule.value)) {
+            hiddenClass = 'hidden'; // hidden
+            return;
+          }
+        } else {
+          if (message.author.name && rule.isRegEx && new RegExp(rule.value).test(message.author.name)) {
+            hiddenClass = 'hidden'; // hidden
+            return;
+          }
+          if (message.author.name && !rule.isRegEx && message.author.name.includes(rule.value)) {
+            hiddenClass = 'hidden'; // hidden
+            return;
+          }
+        }
+      });
+    } else {
+      hiddenClass = '';
+    }
+  });
 
   const nameClass = 'font-bold tracking-wide align-middle';
   const generateNameColorClass = (member: boolean, moderator: boolean, owner: boolean, forceDark: boolean) => {
@@ -72,7 +101,7 @@
 
 <!-- svelte-ignore a11y-mouse-events-have-key-events -->
 <div 
-  class="inline-flex flex-row gap-2 break-words w-full overflow-visible"
+  class="inline-flex flex-row gap-2 break-words w-full overflow-visible {hiddenClass}"
 >
   {#if !hideName && $showProfileIcons}
     <a
